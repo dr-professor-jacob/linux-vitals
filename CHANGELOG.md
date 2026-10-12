@@ -32,6 +32,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   against the contract before it can reintroduce a false-clean report. See
   [docs/report-guide.md](docs/report-guide.md#status-when-a-check-could-not-run).
 
+### Fixed
+
+- **`last_reboot` was an empty string when `who -b` printed nothing or failed**
+  ([#122](https://github.com/sameeralam3127/linux-vitals/issues/122)). In
+  containers, minimal installations without utmp boot records, or when the
+  command fails, `who -b` prints nothing. `default('Unknown')` only replaced
+  undefined values, leaving an empty string in reports and dashboards instead of
+  the documented fallback. Empty and whitespace-only output now fall back to
+  `Unknown`.
+
 ### Documentation
 
 - [docs/compatibility.md](docs/compatibility.md) defines the public

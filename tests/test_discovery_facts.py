@@ -200,3 +200,48 @@ def test_boot_mount_prefers_boot_over_boot_efi_when_both_are_present(tmp_path: P
     )
 
     assert result["mount"] == "/boot"
+
+
+# ---------------------------------------------------------------------------
+# linux_vitals_last_reboot
+# ---------------------------------------------------------------------------
+
+def _run_last_reboot(tmp_path: Path, last_reboot_cmd: dict) -> str:
+    expr = _extract_set_fact_value("Finalize extended discovery facts", "linux_vitals_last_reboot")
+    tasks = [
+        {
+            "name": "Seed the who -b command result for the scenario under test",
+            "ansible.builtin.set_fact": {"linux_vitals_last_reboot_cmd": last_reboot_cmd},
+        },
+        {
+            "name": "Evaluate linux_vitals_last_reboot",
+            "ansible.builtin.set_fact": {"linux_vitals_last_reboot": expr},
+        },
+        _dump_task("linux_vitals_last_reboot"),
+    ]
+    return _run_playbook(tmp_path, tasks)["value"]
+
+
+def test_last_reboot_defaults_to_unknown_on_empty_stdout(tmp_path: Path) -> None:
+    val = _run_last_reboot(tmp_path, {"stdout": "", "rc": 0})
+    assert val == "Unknown"
+
+
+def test_last_reboot_defaults_to_unknown_when_stdout_missing_entirely(
+    tmp_path: Path,
+) -> None:
+    val = _run_last_reboot(tmp_path, {"rc": 1})
+    assert val == "Unknown"
+
+
+def test_last_reboot_defaults_to_unknown_on_whitespace_only_stdout(tmp_path: Path) -> None:
+    val = _run_last_reboot(tmp_path, {"stdout": "   \n", "rc": 0})
+    assert val == "Unknown"
+
+
+def test_last_reboot_reports_timestamp_on_normal_boot_output(tmp_path: Path) -> None:
+    val = _run_last_reboot(
+        tmp_path, {"stdout": "         system boot  2026-09-24 10:55\n", "rc": 0}
+    )
+    assert val == "system boot  2026-09-24 10:55"
+
